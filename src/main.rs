@@ -1,3 +1,5 @@
+pub mod ast;
+pub mod parser;
 pub mod scanner;
 
 use color_eyre::eyre::{Ok, Result};
@@ -8,6 +10,8 @@ use std::{
 };
 
 use scanner::{Scanner, Token};
+
+use crate::parser::Parser;
 
 fn main() -> Result<()> {
     let v: Vec<_> = env::args().collect();
@@ -53,9 +57,15 @@ fn run(buf: &str) -> Result<()> {
     let mut scanner = Scanner::new(buf);
     let tokens: Vec<Token> = scanner.scan_tokens();
 
-    for token in tokens {
+    println!("--TOKENS--");
+    for token in &tokens {
         println!("{:?}", token);
     }
+    println!("--END OF TOKENS--\n");
+
+    let mut parser = Parser::new(tokens);
+    let ast = parser.parse();
+    println!("{:?}", ast);
 
     Ok(())
 }

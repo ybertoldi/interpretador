@@ -22,6 +22,7 @@ fn main() {
 
     generate_structs(&classes);
     generate_enum(&classes);
+    generate_traits(&classes);
     generate_new(&classes);
 }
 
@@ -74,10 +75,35 @@ fn generate_structs(classes: &Vec<Class>) {
 }
 
 fn generate_enum(classes: &Vec<Class>) {
-    println!("pub enum Expr {{");
+    println!("pub enum Expr{{");
     for c in classes {
         println!("    {}({}),", c.name, c.name);
     }
+    println!("}}\n");
+}
+fn generate_traits(classes: &[Class]) {
+    println!("pub trait Visitor<R> {{");
+    for c in classes {
+        println!(
+            "    fn visit_{}(&mut self, expr: &{}) -> R;",
+            c.name.to_lowercase(),
+            c.name
+        );
+    }
+    println!("}}\n");
+
+    println!("impl Expr {{");
+    println!("    pub fn accept<R>(&self, visitor: &mut impl Visitor<R>) -> R {{");
+    println!("        match self{{");
+    for c in classes {
+        println!(
+            "            Expr::{}(e) => visitor.visit_{}(e),",
+            c.name,
+            c.name.to_lowercase()
+        );
+    }
+    println!("        }}");
+    println!("    }}");
     println!("}}\n");
 }
 
