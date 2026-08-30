@@ -1,1 +1,5 @@
 print "Hello, world";
+print "computing 2 + 5 * 10";
+print 2 + 5 * 10;
+print "computing (2 + 5) * 10";
+print (2 + 5) * 10;

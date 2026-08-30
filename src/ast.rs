@@ -1,8 +1,19 @@
-use std::ops::Add;
-
-use crate::scanner::Token;
+use crate::{literal_type::LiteralType, scanner::Token};
 
 // TODO: update script for this structure
+
+#[derive(Debug)]
+pub struct Program(pub Vec<Stmt>);
+
+#[derive(Debug, Clone)]
+pub enum Stmt {
+    Expression(Expr),
+    Print(Expr),
+    Var {
+        name: Token,
+        initializer: Option<Expr>,
+    },
+}
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -17,6 +28,10 @@ pub enum Expr {
     Unary {
         operator: Token,
         right: Box<Expr>,
+    },
+
+    Variable {
+        identifier: Token,
     },
 
     Literal(LiteralType),
@@ -55,101 +70,23 @@ impl Expr {
             right: Box::new(right),
         }
     }
+
+    pub fn build_variable(identifier: Token) -> Self {
+        Self::Variable { identifier }
+    }
 }
 
-pub trait Visitor<T> {
-    fn visit_unary(&self, expr: &Expr) -> T;
-    fn visit_literal(&self, expr: &Expr) -> T;
-    fn visit_grouping(&self, expr: &Expr) -> T;
-    fn visit_binary(&self, expr: &Expr) -> T;
+pub trait StatementVisitor<T> {
+    fn visit_statement(&mut self, stmt: &Stmt) -> T;
+    fn visit_print_stmt(&mut self, stmt: &Stmt) -> T;
+    fn visit_expression_stmt(&mut self, stmt: &Stmt) -> T;
+    fn visit_variable_stmt(&mut self, stmt: &Stmt) -> T;
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum LiteralType {
-    Number(f64),
-    Boolean(bool),
-    StringValue(String), // TODO: make string as reference
-    Null,
-}
-
-use LiteralType::*;
-impl LiteralType {
-    pub fn equal(self, rhs: Self) -> Self {
-        if self == rhs {
-            Boolean(true)
-        } else {
-            Boolean(false)
-        }
-    }
-    pub fn nequal(self, rhs: Self) -> Self {
-        use LiteralType::*;
-        if self != rhs {
-            Boolean(true)
-        } else {
-            Boolean(false)
-        }
-    }
-    pub fn add(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (StringValue(s1), StringValue(s2)) => StringValue(s1.to_string() + s2),
-            (Number(n1), Number(n2)) => Number(n1 + n2),
-            _ => panic!("can not add {:?} to {:?}", self, rhs),
-        }
-    }
-    pub fn sub(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (Number(n1), Number(n2)) => Number(n1 - n2),
-            _ => panic!("can not sub {:?} to {:?}", self, rhs),
-        }
-    }
-    pub fn div(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (Number(n1), Number(n2)) => Number(n1 / n2),
-            _ => panic!("can not div {:?} to {:?}", self, rhs),
-        }
-    }
-    pub fn mult(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (StringValue(s1), Number(n)) => StringValue(s1.repeat(*n as usize)),
-            (Number(n1), Number(n2)) => Number(n1 * n2),
-            _ => panic!("can not multiply {:?} to {:?}", self, rhs),
-        }
-    }
-    pub fn less(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (Number(n1), Number(n2)) => Boolean(n1 < n2),
-            _ => panic!("can not cmp {:?} to {:?}", self, rhs),
-        }
-    }
-    pub fn less_eq(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (Number(n1), Number(n2)) => Boolean(n1 <= n2),
-            _ => panic!("can not cmp {:?} to {:?}", self, rhs),
-        }
-    }
-    pub fn greater(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (Number(n1), Number(n2)) => Boolean(n1 > n2),
-            _ => panic!("can not cmp {:?} to {:?}", self, rhs),
-        }
-    }
-    pub fn greater_eq(self, rhs: Self) -> Self {
-        match (&self, &rhs) {
-            (Number(n1), Number(n2)) => Boolean(n1 >= n2),
-            _ => panic!("can not cmp {:?} to {:?}", self, rhs),
-        }
-    }
-
-    pub fn bang(self) -> Self {
-        match &self {
-            Boolean(b) => Boolean(!b),
-            _ => panic!("Can not apply bang to {:?}", self),
-        }
-    }
-    pub fn negate(self) -> Self {
-        match &self {
-            Number(n) => Number(-n),
-            _ => panic!("Can not apply unary negation to {:?}", self),
-        }
-    }
+pub trait ExpressionVisitor<T> {
+    fn visit_expression(&mut self, expr: &Expr) -> T;
+    fn visit_unary(&mut self, expr: &Expr) -> T;
+    fn visit_literal(&mut self, expr: &Expr) -> T;
+    fn visit_grouping(&mut self, expr: &Expr) -> T;
+    fn visit_binary(&mut self, expr: &Expr) -> T;
+    fn visit_variable_expr(&mut self, expr: &Expr) -> T;
 }

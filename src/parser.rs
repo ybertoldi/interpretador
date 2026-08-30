@@ -1,7 +1,7 @@
 use std::mem::discriminant;
 
 use crate::{
-    ast::Expr,
+    ast::{Expr, Program, Stmt},
     scanner::Token::{self, *},
 };
 
@@ -16,8 +16,57 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Expr {
-        self.expression()
+    pub fn parse(&mut self) -> Program {
+        self.program()
+    }
+
+    fn program(&mut self) -> Program {
+        let mut stmts = Vec::new();
+        while !self.is_at_end() {
+            let stmt = self.declaration();
+            stmts.push(stmt);
+        }
+        Program(stmts)
+    }
+
+    fn declaration(&mut self) -> Stmt {
+        if self.check(&Var) {
+            self.consume(Var).unwrap();
+            self.var_declaration()
+        } else {
+            self.stmt()
+        }
+    }
+
+    fn var_declaration(&mut self) -> Stmt {
+        let name = self
+            .consume(Identifier("".to_string()))
+            .expect("No expected identifier after var declaration");
+
+        let initializer = if self.check(&Equal) {
+            self.consume(Equal).unwrap();
+            Some(self.expression())
+        } else {
+            None
+        };
+
+        self.consume(Semicolon)
+            .expect("Expected semicolon after expression");
+        Stmt::Var { name, initializer }
+    }
+
+    fn stmt(&mut self) -> Stmt {
+        let stmt;
+        if self.check(&Print) {
+            self.consume(Print);
+            stmt = Stmt::Print(self.expression());
+        } else {
+            stmt = Stmt::Expression(self.expression());
+        }
+        self.consume(Semicolon)
+            .expect("Expected ';' after statement");
+
+        stmt
     }
 
     // parsing
@@ -82,13 +131,19 @@ impl Parser {
         }
 
         if self.check(&LeftParen) {
+            self.consume(LeftParen).unwrap();
+
             let expr = self.expression();
             self.consume(Token::RightParen)
                 .expect("Expected ')' after expression!");
             return Expr::build_grouping(expr);
         }
 
-        panic!("Error parsing primary")
+        if self.check(&Identifier("".to_string())) {
+            return Expr::build_variable(self.advance().clone());
+        }
+
+        panic!("Error parsing primary. Found {:?}", self.peek())
     }
 }
 
@@ -127,14 +182,15 @@ impl Parser {
         }
         self.previous()
     }
-    fn consume(&mut self, token: Token) -> Result<(), ()> {
+    fn consume(&mut self, token: Token) -> Option<Token> {
         if self.check(&token) {
+            let token = self.peek().clone();
             if !self.is_at_end() {
                 self.current += 1;
             }
-            Ok(())
+            Some(token)
         } else {
-            Err(())
+            None
         }
     }
 }
