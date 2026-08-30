@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod interpreter;
 pub mod parser;
 pub mod scanner;
 
@@ -11,7 +12,7 @@ use std::{
 
 use scanner::{Scanner, Token};
 
-use crate::parser::Parser;
+use crate::{interpreter::Interpreter, parser::Parser};
 
 fn main() -> Result<()> {
     let v: Vec<_> = env::args().collect();
@@ -63,9 +64,16 @@ fn run(buf: &str) -> Result<()> {
     }
     println!("--END OF TOKENS--\n");
 
+    println!("--AST--");
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
     println!("{:?}", ast);
+    println!("--END OF AST--");
+
+    println!("--Interpreter Result--");
+    let interpreter = Interpreter::new(ast);
+    let result = interpreter.run();
+    println!("{:?}", result);
 
     Ok(())
 }
