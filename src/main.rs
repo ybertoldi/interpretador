@@ -1,6 +1,6 @@
 pub mod ast;
 pub mod interpreter;
-pub mod literal_type;
+pub mod object;
 pub mod parser;
 pub mod scanner;
 
@@ -19,17 +19,16 @@ struct Options {
     show_grammar: bool,
 }
 fn main() -> Result<()> {
-    let mut opts = Options {
-        show_tokens: false,
-        show_grammar: false,
-    };
     let v: Vec<_> = env::args().collect();
-
     if v.len() > 4 {
         println!("Usage: rlox [script] [-t] [-g]");
         exit(64);
     }
 
+    let mut opts = Options {
+        show_tokens: false,
+        show_grammar: false,
+    };
     let mut filename = "";
     for value in &v[1..] {
         match value.as_str() {

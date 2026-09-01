@@ -1,0 +1,5 @@
+print "declarando variaveis!";
+var x = 20;
+var y = 50;
+print "x + y =";
+print x + y;

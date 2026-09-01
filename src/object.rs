@@ -1,14 +1,13 @@
 #[derive(Debug, Clone, PartialEq)]
-pub enum LiteralType {
+pub enum Object {
     Number(f64),
     Boolean(bool),
-    StringValue(String), // TODO: utilizar referencia ao inves de copia
+    Str(String), // TODO: utilizar referencia ao inves de copia
     Null,
-    // TODO: adicionar campos de numeros inteiros
 }
 
-use LiteralType::*;
-impl LiteralType {
+use Object::*;
+impl Object {
     pub fn equal(self, rhs: Self) -> Self {
         if self == rhs {
             Boolean(true)
@@ -17,7 +16,7 @@ impl LiteralType {
         }
     }
     pub fn nequal(self, rhs: Self) -> Self {
-        use LiteralType::*;
+        use Object::*;
         if self != rhs {
             Boolean(true)
         } else {
@@ -26,7 +25,7 @@ impl LiteralType {
     }
     pub fn add(self, rhs: Self) -> Self {
         match (&self, &rhs) {
-            (StringValue(s1), StringValue(s2)) => StringValue(s1.to_string() + s2),
+            (Str(s1), Str(s2)) => Str(s1.to_string() + s2),
             (Number(n1), Number(n2)) => Number(n1 + n2),
             _ => panic!("can not add {:?} to {:?}", self, rhs),
         }
@@ -45,7 +44,7 @@ impl LiteralType {
     }
     pub fn mult(self, rhs: Self) -> Self {
         match (&self, &rhs) {
-            (StringValue(s1), Number(n)) => StringValue(s1.repeat(*n as usize)),
+            (Str(s1), Number(n)) => Str(s1.repeat(*n as usize)),
             (Number(n1), Number(n2)) => Number(n1 * n2),
             _ => panic!("can not multiply {:?} to {:?}", self, rhs),
         }
