@@ -1,12 +1,13 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Object {
-    Number(f64),
+    Number(BigInt),
     Boolean(bool),
     Str(String), // TODO: utilizar referencia ao inves de copia
     Null,
 }
 
 use Object::*;
+use num_bigint::BigInt;
 impl Object {
     pub fn equal(self, rhs: Self) -> Self {
         if self == rhs {
@@ -44,7 +45,7 @@ impl Object {
     }
     pub fn mult(self, rhs: Self) -> Self {
         match (&self, &rhs) {
-            (Str(s1), Number(n)) => Str(s1.repeat(*n as usize)),
+            (Str(s1), Number(n)) => Str(s1.repeat(n.to_string().parse::<usize>().unwrap())),
             (Number(n1), Number(n2)) => Number(n1 * n2),
             _ => panic!("can not multiply {:?} to {:?}", self, rhs),
         }
@@ -98,7 +99,7 @@ impl Object {
     pub fn truth_value(&self) -> bool {
         match self {
             Object::Boolean(b) => *b,
-            Object::Number(n) => *n != 0.0,
+            Object::Number(n) => *n != BigInt::from(0),
             Object::Str(s) => !s.is_empty(),
             _ => false,
         }

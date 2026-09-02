@@ -214,7 +214,13 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Expr {
-        if self.matches(&[False, True, Nil, Number(0.0), StringLiteral("".to_string())]) {
+        if self.matches(&[
+            False,
+            True,
+            Nil,
+            Number(num_bigint::BigInt::from(0)),
+            StringLiteral("".to_string()),
+        ]) {
             return Expr::build_literal(self.previous().clone());
         }
 

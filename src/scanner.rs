@@ -1,3 +1,5 @@
+use num_bigint::BigInt;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     NoToken,
@@ -27,7 +29,7 @@ pub enum Token {
     // Literals.
     Identifier(String),
     StringLiteral(String),
-    Number(f64),
+    Number(BigInt),
 
     // Keywords.
     And,
@@ -217,7 +219,7 @@ impl Scanner {
     fn parse_word(&self, s: String) -> Token {
         use Token::*;
 
-        if let Result::Ok(n) = s.parse::<f64>() {
+        if let Result::Ok(n) = s.parse::<BigInt>() {
             return Number(n);
         }
 
