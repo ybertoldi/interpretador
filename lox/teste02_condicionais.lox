@@ -3,7 +3,8 @@ var b = 10;
 
 if (a > b)
   print "A eh maior que B";
-else 
+
+if (b == a or b >a)
   print "B eh maior ou igual a A";
 
 

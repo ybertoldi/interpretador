@@ -69,6 +69,8 @@ impl Parser {
         } else if self.check(&If) {
             self.consume(If);
             stmt = self.if_stmt();
+        } else if self.matches(&[While]) {
+            stmt = self.while_stmt();
         } else {
             stmt = Stmt::Expression(self.expression());
             self.consume(Semicolon)
@@ -76,6 +78,16 @@ impl Parser {
         }
 
         stmt
+    }
+
+    fn while_stmt(&mut self) -> Stmt {
+        self.consume(LeftParen).expect("Expected '(' after WHILE ");
+        let while_cond = self.expression();
+        self.consume(RightParen)
+            .expect("Expected ')' after WHILE CONDITION");
+
+        let while_stmt = self.stmt();
+        Stmt::build_while_stmt(while_cond, while_stmt)
     }
 
     fn if_stmt(&mut self) -> Stmt {
@@ -112,7 +124,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Expr {
-        let expr = self.equality();
+        let expr = self.or();
 
         if self.matches(&[Token::Equal]) {
             let value = self.assignment();
@@ -124,6 +136,30 @@ impl Parser {
         } else {
             expr
         }
+    }
+
+    fn or(&mut self) -> Expr {
+        let mut expr = self.and();
+
+        while self.matches(&[Or]) {
+            let operator = self.previous().clone();
+            let right = self.and();
+            expr = Expr::build_binary(expr, operator, right);
+        }
+
+        expr
+    }
+
+    fn and(&mut self) -> Expr {
+        let mut expr = self.equality();
+
+        while self.matches(&[And]) {
+            let operator = self.previous().clone();
+            let right = self.equality();
+            expr = Expr::build_binary(expr, operator, right);
+        }
+
+        expr
     }
 
     fn equality(&mut self) -> Expr {

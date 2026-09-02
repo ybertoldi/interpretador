@@ -104,6 +104,22 @@ impl StatementVisitor<Option<Object>> for Interpreter {
             None
         }
     }
+
+    fn visit_while_stmt(&mut self, stmt: &Stmt) -> Option<Object> {
+        let Stmt::While {
+            while_cond,
+            while_stmt,
+        } = stmt
+        else {
+            panic!("Expected while statment");
+        };
+
+        while self.eval(while_cond).truth_value() {
+            self.visit_statement(while_stmt);
+        }
+
+        None
+    }
 }
 
 impl ExpressionVisitor<Object> for Interpreter {
@@ -134,7 +150,7 @@ impl ExpressionVisitor<Object> for Interpreter {
             Token::And => self.eval(left).and(self.eval(right)),
             Token::Or => self.eval(left).or(self.eval(right)),
 
-            _ => panic!("Invalid operator {:?}", operator),
+            _ => panic!("Unexpected operator {:?}", operator),
         }
     }
 

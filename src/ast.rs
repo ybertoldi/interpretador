@@ -19,6 +19,10 @@ pub enum Stmt {
         then_branch: Box<Stmt>,
         else_branch: Option<Box<Stmt>>,
     },
+    While {
+        while_cond: Expr,
+        while_stmt: Box<Stmt>,
+    },
 }
 impl Stmt {
     pub fn build_if(condition: Expr, then_branch: Stmt, else_branch: Option<Stmt>) -> Stmt {
@@ -29,6 +33,13 @@ impl Stmt {
                 Some(s) => Some(Box::new(s)),
                 None => None,
             },
+        }
+    }
+
+    pub fn build_while_stmt(while_cond: Expr, while_stmt: Stmt) -> Stmt {
+        Self::While {
+            while_cond,
+            while_stmt: Box::new(while_stmt),
         }
     }
 }
@@ -114,6 +125,7 @@ pub trait StatementVisitor<T> {
             Stmt::Var { .. } => self.visit_variable_stmt(stmt),
             Stmt::Block(_) => self.visit_block_stmt(stmt),
             Stmt::If { .. } => self.visit_if_stmt(stmt),
+            Stmt::While { .. } => self.visit_while_stmt(stmt),
         }
     }
 
@@ -122,6 +134,7 @@ pub trait StatementVisitor<T> {
     fn visit_variable_stmt(&mut self, stmt: &Stmt) -> T;
     fn visit_block_stmt(&mut self, stmt: &Stmt) -> T;
     fn visit_if_stmt(&mut self, stmt: &Stmt) -> T;
+    fn visit_while_stmt(&mut self, stmt: &Stmt) -> T;
 }
 pub trait ExpressionVisitor<T> {
     fn eval(&mut self, expr: &Expr) -> T {
