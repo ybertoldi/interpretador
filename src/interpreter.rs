@@ -84,6 +84,26 @@ impl StatementVisitor<Option<Object>> for Interpreter {
         self.environment = prev;
         None
     }
+
+    fn visit_if_stmt(&mut self, stmt: &Stmt) -> Option<Object> {
+        let Stmt::If {
+            condition,
+            then_branch,
+            else_branch,
+        } = stmt
+        else {
+            panic!("Expected if stmt");
+        };
+
+        let enter_if = self.eval(condition).truth_value();
+        if enter_if {
+            self.visit_statement(then_branch)
+        } else if let Some(els) = else_branch {
+            self.visit_statement(els)
+        } else {
+            None
+        }
+    }
 }
 
 impl ExpressionVisitor<Object> for Interpreter {
@@ -110,6 +130,9 @@ impl ExpressionVisitor<Object> for Interpreter {
             Token::Minus => self.eval(left).sub(self.eval(right)),
             Token::Star => self.eval(left).mult(self.eval(right)),
             Token::Slash => self.eval(left).div(self.eval(right)), // TODO: divisao por zero
+
+            Token::And => self.eval(left).and(self.eval(right)),
+            Token::Or => self.eval(left).or(self.eval(right)),
 
             _ => panic!("Invalid operator {:?}", operator),
         }

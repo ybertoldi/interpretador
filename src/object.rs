@@ -86,4 +86,21 @@ impl Object {
             _ => panic!("Can not apply unary negation to {:?}", self),
         }
     }
+
+    pub fn and(&self, right: Object) -> Object {
+        Object::Boolean(self.truth_value() && right.truth_value())
+    }
+
+    pub fn or(&self, right: Object) -> Object {
+        Object::Boolean(self.truth_value() || right.truth_value())
+    }
+
+    pub fn truth_value(&self) -> bool {
+        match self {
+            Object::Boolean(b) => *b,
+            Object::Number(n) => *n != 0.0,
+            Object::Str(s) => !s.is_empty(),
+            _ => false,
+        }
+    }
 }

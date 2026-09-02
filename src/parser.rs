@@ -66,6 +66,9 @@ impl Parser {
         } else if self.check(&LeftBrace) {
             self.consume(LeftBrace);
             stmt = Stmt::Block(self.block());
+        } else if self.check(&If) {
+            self.consume(If);
+            stmt = self.if_stmt();
         } else {
             stmt = Stmt::Expression(self.expression());
             self.consume(Semicolon)
@@ -73,6 +76,23 @@ impl Parser {
         }
 
         stmt
+    }
+
+    fn if_stmt(&mut self) -> Stmt {
+        self.consume(LeftParen).expect("Expected ( after IF");
+        let condition = self.expression();
+        self.consume(RightParen)
+            .expect("Expected closing parenthesis after if");
+        let then_branch = self.stmt();
+
+        let else_branch;
+        if self.matches(&[Else]) {
+            else_branch = Some(self.stmt());
+        } else {
+            else_branch = None
+        }
+
+        Stmt::build_if(condition, then_branch, else_branch)
     }
 
     fn block(&mut self) -> Vec<Stmt> {
