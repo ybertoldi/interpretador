@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{Expr, ExpressionVisitor, StatementVisitor, Stmt},
@@ -6,13 +6,13 @@ use crate::{
     scanner::Token,
 };
 pub struct Interpreter {
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Self {
-            environment: Environment::new(),
+            environment: Rc::new(RefCell::new(Environment::new())),
         }
     }
 
@@ -30,29 +30,19 @@ impl Interpreter {
 }
 
 impl StatementVisitor<Option<Object>> for Interpreter {
-    fn visit_statement(&mut self, stmt: &Stmt) -> Option<Object> {
-        match stmt {
-            Stmt::Expression(e) => Some(self.eval(e)),
-            Stmt::Print(e) => {
-                let res = self.eval(e);
-                match res {
-                    Object::Number(n) => println!("{}", n),
-                    Object::Boolean(b) => println!("{}", b),
-                    Object::Str(s) => println!("{}", s),
-                    Object::Null => println!("(nil)"),
-                };
-                None
-            }
-            Stmt::Var { .. } => self.visit_variable_stmt(stmt),
-        }
-    }
+    fn visit_print_stmt(&mut self, stmt: &Stmt) -> Option<Object> {
+        let Stmt::Print(e) = stmt else {
+            unreachable!();
+        };
 
-    fn visit_print_stmt(&mut self, _stmt: &Stmt) -> Option<Object> {
-        todo!()
-    }
-
-    fn visit_expression_stmt(&mut self, _stmt: &Stmt) -> Option<Object> {
-        todo!()
+        let res = self.eval(e);
+        match res {
+            Object::Number(n) => println!("{}", n),
+            Object::Boolean(b) => println!("{}", b),
+            Object::Str(s) => println!("{}", s),
+            Object::Null => println!("(nil)"),
+        };
+        None
     }
 
     fn visit_variable_stmt(&mut self, stmt: &Stmt) -> Option<Object> {
@@ -65,23 +55,38 @@ impl StatementVisitor<Option<Object>> for Interpreter {
                 value = None
             }
 
-            self.environment.set(&name, value);
+            self.environment.borrow_mut().set(&name, value);
         }
+        None
+    }
+
+    fn visit_expression_stmt(&mut self, stmt: &Stmt) -> Option<Object> {
+        let Stmt::Expression(e) = stmt else {
+            unreachable!();
+        };
+
+        Some(self.eval(e))
+    }
+
+    fn visit_block_stmt(&mut self, stmt: &Stmt) -> Option<Object> {
+        let Stmt::Block(stmts) = stmt else {
+            unreachable!();
+        };
+
+        let prev = Rc::clone(&self.environment);
+        let new_ref = Rc::clone(&self.environment);
+        self.environment = Rc::new(RefCell::new(Environment::new_with_enclosing(new_ref)));
+
+        for s in stmts {
+            self.visit_statement(s);
+        }
+
+        self.environment = prev;
         None
     }
 }
 
 impl ExpressionVisitor<Object> for Interpreter {
-    fn eval(&mut self, expr: &Expr) -> Object {
-        match expr {
-            Expr::Binary { .. } => self.visit_binary(expr),
-            Expr::Unary { .. } => self.visit_unary(expr),
-            Expr::Literal(_) => self.visit_literal(expr),
-            Expr::Grouping { .. } => self.visit_grouping(expr),
-            Expr::Variable { .. } => self.visit_variable_expr(expr),
-        }
-    }
-
     fn visit_binary(&mut self, expr: &Expr) -> Object {
         let Expr::Binary {
             left,
@@ -109,6 +114,7 @@ impl ExpressionVisitor<Object> for Interpreter {
             _ => panic!("Invalid operator {:?}", operator),
         }
     }
+
     fn visit_unary(&mut self, expr: &Expr) -> Object {
         let Expr::Unary { operator, right } = expr else {
             panic!("Expected unary");
@@ -143,34 +149,63 @@ impl ExpressionVisitor<Object> for Interpreter {
             panic!("Expected Variable expression")
         };
 
-        if let Some(val) = self.environment.get(&identifier) {
-            return val.clone();
+        if let Some(val) = self.environment.borrow().get_token(&identifier) {
+            return val;
         } else {
             panic!("no value for variable {:?}", identifier);
         }
     }
+
+    fn visit_assignment_expr(&mut self, expr: &Expr) -> Object {
+        let Expr::Assignment { identifier, value } = expr else {
+            unreachable!();
+        };
+
+        let Token::Identifier(s) = identifier else {
+            unreachable!();
+        };
+
+        let value = self.eval(value);
+        self.environment.borrow_mut().assign(s, value.clone());
+        Object::Null
+    }
 }
 
 pub struct Environment {
+    enclosing: Option<Rc<RefCell<Environment>>>,
     values: HashMap<String, Option<Object>>,
 }
 
 impl Environment {
     fn new() -> Self {
         Self {
+            enclosing: None,
             values: HashMap::new(),
         }
     }
 
-    fn get(&self, name: &Token) -> Option<&Object> {
-        if let Token::Identifier(s) = name {
-            match self.values.get(s) {
-                Some(v) => v.as_ref(),
-                None => panic!(
-                    "variavel {} nao registrada no mapa. Mapa = {:?}",
-                    s, self.values
-                ),
-            }
+    fn new_with_enclosing(enclosing: Rc<RefCell<Environment>>) -> Self {
+        Self {
+            enclosing: Some(enclosing),
+            values: HashMap::new(),
+        }
+    }
+
+    fn get_token(&self, name: &Token) -> Option<Object> {
+        let Token::Identifier(s) = name else {
+            panic!("Token is not identifier!")
+        };
+
+        self.get(s)
+    }
+
+    fn get(&self, name: &str) -> Option<Object> {
+        if let Some(v) = self.values.get(name) {
+            return v.clone();
+        }
+
+        if let Some(env) = &self.enclosing {
+            env.as_ref().borrow().get(name)
         } else {
             None
         }
@@ -179,6 +214,16 @@ impl Environment {
     fn set(&mut self, name: &Token, value: Option<Object>) {
         if let Token::Identifier(s) = name {
             self.values.insert(s.clone(), value);
+        }
+    }
+
+    fn assign(&mut self, name: &str, value: Object) {
+        if let Some(v) = self.values.get_mut(name) {
+            *v = Some(value);
+        } else {
+            if let Some(env) = &self.enclosing {
+                env.borrow_mut().assign(name, value);
+            }
         }
     }
 }

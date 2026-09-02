@@ -1,0 +1,15 @@
+print "entrei no escopo 0";
+print "declarando a = 20";
+var a = 20;
+{
+  print "entrei no escopo 1";
+  print "declarando a = 30";
+  var a = 30;
+  print "a = ";
+  print a;
+  print "saindo do escopo 1";
+}
+
+print "a = ";
+print a;
+print "sai no escopo 0";

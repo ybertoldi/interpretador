@@ -57,21 +57,53 @@ impl Parser {
 
     fn stmt(&mut self) -> Stmt {
         let stmt;
+        // print stmt
         if self.check(&Print) {
             self.consume(Print);
             stmt = Stmt::Print(self.expression());
+            self.consume(Semicolon)
+                .expect("Expected ';' after statement");
+        } else if self.check(&LeftBrace) {
+            self.consume(LeftBrace);
+            stmt = Stmt::Block(self.block());
         } else {
             stmt = Stmt::Expression(self.expression());
+            self.consume(Semicolon)
+                .expect("Expected ';' after statement");
         }
-        self.consume(Semicolon)
-            .expect("Expected ';' after statement");
 
         stmt
     }
 
+    fn block(&mut self) -> Vec<Stmt> {
+        let mut stmts = Vec::new();
+        while !self.check(&RightBrace) && !self.is_at_end() {
+            stmts.push(self.declaration());
+        }
+        self.consume(RightBrace)
+            .expect("Esperava '}' para fechar o bloco");
+
+        stmts
+    }
+
     // parsing
     fn expression(&mut self) -> Expr {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Expr {
+        let expr = self.equality();
+
+        if self.matches(&[Token::Equal]) {
+            let value = self.assignment();
+            let Expr::Variable { identifier } = expr else {
+                panic!("invalid assign target");
+            };
+
+            Expr::build_assignment(identifier, value)
+        } else {
+            expr
+        }
     }
 
     fn equality(&mut self) -> Expr {
