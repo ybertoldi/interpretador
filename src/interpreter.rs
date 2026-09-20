@@ -31,17 +31,20 @@ impl Interpreter {
 
 impl StatementVisitor<Option<Object>> for Interpreter {
     fn visit_print_stmt(&mut self, stmt: &Stmt) -> Option<Object> {
-        let Stmt::Print(e) = stmt else {
+        let Stmt::Print(print_list) = stmt else {
             unreachable!();
         };
 
-        let res = self.eval(e);
-        match res {
-            Object::Number(n) => println!("{}", n),
-            Object::Boolean(b) => println!("{}", b),
-            Object::Str(s) => println!("{}", s),
-            Object::Null => println!("(nil)"),
-        };
+        for expr in print_list {
+            let res = self.eval(expr);
+            match res {
+                Object::Number(n) => print!("{}", n),
+                Object::Boolean(b) => print!("{}", b),
+                Object::Str(s) => print!("{}", s),
+                Object::Null => print!("(nil)"),
+            };
+        }
+        println!();
         None
     }
 

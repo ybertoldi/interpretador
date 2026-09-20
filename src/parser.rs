@@ -60,9 +60,15 @@ impl Parser {
         // print stmt
         if self.check(&Print) {
             self.consume(Print);
-            stmt = Stmt::Print(self.expression());
+
+            let mut exprs = vec![self.expression()];
+            while self.consume(Comma).is_some() {
+                exprs.push(self.expression());
+            }
             self.consume(Semicolon)
                 .expect("Expected ';' after statement");
+
+            stmt = Stmt::Print(exprs);
         } else if self.check(&LeftBrace) {
             self.consume(LeftBrace);
             stmt = Stmt::Block(self.block());

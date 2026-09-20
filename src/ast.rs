@@ -8,7 +8,7 @@ pub struct Program(pub Vec<Stmt>);
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Expression(Expr),
-    Print(Expr),
+    Print(Vec<Expr>),
     Var {
         name: Token,
         initializer: Option<Expr>,
@@ -23,25 +23,6 @@ pub enum Stmt {
         while_cond: Expr,
         while_stmt: Box<Stmt>,
     },
-}
-impl Stmt {
-    pub fn build_if(condition: Expr, then_branch: Stmt, else_branch: Option<Stmt>) -> Stmt {
-        Self::If {
-            condition,
-            then_branch: Box::new(then_branch),
-            else_branch: match else_branch {
-                Some(s) => Some(Box::new(s)),
-                None => None,
-            },
-        }
-    }
-
-    pub fn build_while_stmt(while_cond: Expr, while_stmt: Stmt) -> Stmt {
-        Self::While {
-            while_cond,
-            while_stmt: Box::new(while_stmt),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -69,6 +50,26 @@ pub enum Expr {
     },
 
     Literal(Object),
+}
+
+impl Stmt {
+    pub fn build_if(condition: Expr, then_branch: Stmt, else_branch: Option<Stmt>) -> Stmt {
+        Self::If {
+            condition,
+            then_branch: Box::new(then_branch),
+            else_branch: match else_branch {
+                Some(s) => Some(Box::new(s)),
+                None => None,
+            },
+        }
+    }
+
+    pub fn build_while_stmt(while_cond: Expr, while_stmt: Stmt) -> Stmt {
+        Self::While {
+            while_cond,
+            while_stmt: Box::new(while_stmt),
+        }
+    }
 }
 
 impl Expr {

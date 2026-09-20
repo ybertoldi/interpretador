@@ -1,16 +1,15 @@
-var a = 0;
+var temp;
 var b = 1;
 var c = 1;
 
-var count = 10000;
-print "calculando fibonacci ate o numero:";
-print count;
+var count = 500;
+print "calculando fibonacci ate o numero: ", count;
 
 while (count - 2 > 0){
   count = count - 1;
-  a = b + c;
+  temp = b + c;
   b = c;
-  c = a;
+  c = temp;
 }
 
 print "Resultado:";

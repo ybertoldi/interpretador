@@ -18,11 +18,17 @@ struct Options {
     show_tokens: bool,
     show_grammar: bool,
 }
+
+fn usage_exit(exit_code: i32) {
+    println!(
+        "Usage: rlox [script] [-t | --show_tokens] [-g | --show_grammar] [-h | --help] [-G | --GUI]"
+    );
+    exit(exit_code);
+}
 fn main() -> Result<()> {
     let v: Vec<_> = env::args().collect();
     if v.len() > 4 {
-        println!("Usage: rlox [script] [-t] [-g]");
-        exit(64);
+        usage_exit(64);
     }
 
     let mut opts = Options {
@@ -32,14 +38,33 @@ fn main() -> Result<()> {
     let mut filename = "";
     for value in &v[1..] {
         match value.as_str() {
-            "-t" => {
+            "-t" | "--show_tokens" => {
                 opts.show_tokens = true;
             }
-            "-g" => {
+            "-g" | "--show_grammar" => {
                 opts.show_grammar = true;
             }
+            "-h" | "--help" => {
+                usage_exit(0);
+            }
 
-            other => filename = other,
+            "-G" | "--GUI" => {
+                println!("TODO: egui");
+            }
+
+            other if !other.starts_with("-") => {
+                if !filename.is_empty() {
+                    filename = other;
+                } else {
+                    println!("invalid parameter {}", other);
+                    usage_exit(65);
+                }
+            }
+
+            param => {
+                println!("invalid parameter {}", param);
+                usage_exit(66);
+            }
         };
     }
 
