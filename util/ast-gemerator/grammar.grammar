@@ -9,9 +9,11 @@ statement      → exprStmt
                | printStmt ;
 
 exprStmt       → expression ";" ;
-printStmt      → "print" expression ";" ;
+printStmt      → "print" expression ("," expression)* ";" ;
 
-expression     → equality ;
+// TODO: ta tudo defasado aqui, a logica em parser.rs esta com mais classes que constam aqui
+expression     → shell_expr ;
+shell_expr     → "sh" "(" equality ")" ; // TODO: arrumar esta gambiarra mais tarde. utilizar a mesma sintaxe que utilizei no print
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;

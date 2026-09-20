@@ -1,4 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, process::Command, rc::Rc};
+
+use sh_exec::exec;
 
 use crate::{
     ast::{Expr, ExpressionVisitor, StatementVisitor, Stmt},
@@ -36,13 +38,8 @@ impl StatementVisitor<Option<Object>> for Interpreter {
         };
 
         for expr in print_list {
-            let res = self.eval(expr);
-            match res {
-                Object::Number(n) => print!("{}", n),
-                Object::Boolean(b) => print!("{}", b),
-                Object::Str(s) => print!("{}", s),
-                Object::Null => print!("(nil)"),
-            };
+            let res = self.eval(expr).string_repr();
+            print!("{res}");
         }
         println!();
         None
@@ -210,6 +207,21 @@ impl ExpressionVisitor<Object> for Interpreter {
         let value = self.eval(value);
         self.environment.borrow_mut().assign(s, value.clone());
         Object::Null
+    }
+
+    fn visit_shell_expr(&mut self, expr: &Expr) -> Object {
+        let Expr::ShellExpr(exprs) = expr else {
+            unreachable!();
+        };
+
+        let mut cmd = String::new();
+        for expr in exprs {
+            cmd += self.eval(expr).string_repr().as_str();
+        }
+
+        let result = exec!("error", false, "{cmd}").unwrap();
+        let result = result.trim_end().to_string();
+        Object::Str(result)
     }
 }
 

@@ -27,6 +27,8 @@ pub enum Stmt {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
+    ShellExpr(Vec<Expr>),
+
     Binary {
         left: Box<Expr>,
         operator: Token,
@@ -146,6 +148,7 @@ pub trait ExpressionVisitor<T> {
             Expr::Grouping { .. } => self.visit_grouping(expr),
             Expr::Variable { .. } => self.visit_variable_expr(expr),
             Expr::Assignment { .. } => self.visit_assignment_expr(expr),
+            Expr::ShellExpr(_) => self.visit_shell_expr(expr),
         }
     }
 
@@ -155,4 +158,5 @@ pub trait ExpressionVisitor<T> {
     fn visit_binary(&mut self, expr: &Expr) -> T;
     fn visit_variable_expr(&mut self, expr: &Expr) -> T;
     fn visit_assignment_expr(&mut self, expr: &Expr) -> T;
+    fn visit_shell_expr(&mut self, expr: &Expr) -> T;
 }

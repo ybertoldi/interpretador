@@ -104,4 +104,13 @@ impl Object {
             _ => false,
         }
     }
+
+    pub(crate) fn string_repr(&self) -> String {
+        match self {
+            Object::Number(n) => format!("{}", n),
+            Object::Boolean(b) => format!("{}", b),
+            Object::Str(s) => format!("{}", s),
+            Object::Null => format!("(nil)"),
+        }
+    }
 }

@@ -130,7 +130,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Expr {
-        let expr = self.or();
+        let expr = self.shell_expr();
 
         if self.matches(&[Token::Equal]) {
             let value = self.assignment();
@@ -141,6 +141,28 @@ impl Parser {
             Expr::build_assignment(identifier, value)
         } else {
             expr
+        }
+    }
+
+    fn shell_expr(&mut self) -> Expr {
+        if let Token::Identifier(s) = self.peek()
+            && s == "sh"
+        {
+            self.advance();
+            self.consume(Token::LeftParen)
+                .expect("expected '(' after sh");
+
+            let mut sh_input = vec![self.or()];
+            while self.matches(&[Token::Comma]) {
+                sh_input.push(self.or());
+            }
+
+            self.consume(Token::RightParen)
+                .expect("expected ')' after finishing sh");
+
+            Expr::ShellExpr(sh_input)
+        } else {
+            self.or()
         }
     }
 

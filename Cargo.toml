@@ -6,4 +6,7 @@ edition = "2024"
 [dependencies]
 clap = "4.6.6"
 color-eyre = "0.6.5"
+colored = "3.1.1"
 num-bigint = "0.5.1"
+sh-exec = "0.2.0"
+shell_exec = "0.2.1"

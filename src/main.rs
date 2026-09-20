@@ -92,6 +92,7 @@ fn run_prompt(opts: Options, interpreter: &mut Interpreter) -> Result<()> {
 
         io::stdin().read_line(&mut line)?;
         if line.is_empty() {
+            println!();
             break;
         }
 
